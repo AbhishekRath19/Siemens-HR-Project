@@ -2,14 +2,17 @@ from fastapi import FastAPI, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 from sentence_transformers import SentenceTransformer, util
 from PyPDF2 import PdfReader
-import ollama
+from groq import Groq
+import os
 import io
+
+groq_client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5173", "https://vercel.com/abhishekrath19s-projects/siemens-hr-project"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -40,9 +43,11 @@ Resume:
 {resume_text}
 
 Summary:"""
-    response = ollama.chat(model='llama3.2:1b', messages=[{'role': 'user', 'content': prompt}])
-    return response['message']['content']
-
+    response = groq_client.chat.completions.create(
+        model="llama-3.1-8b-instant",
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return response.choices[0].message.content
 @app.post("/analyze")
 async def analyze(job_description: str = Form(...), files: list[UploadFile] = []):
     results = []
